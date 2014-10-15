@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Travis CI logs comparison tool</title>
+    <!-- using native Promise implementation, may not work in old browsers -->
+    <script src="./fetch-2c1534.js"></script>
+    <script src="./prettydiff-4e485f.js"></script>
+    <style id="main">
+    * {
+        box-sizing: border-box;
+    }
+    html, body {
+        margin:0; padding:0; border:0;
+        height: 100%;
+        overflow:hidden;
+        font-family: Tahoma;
+    }
+    header {
+        margin:0; padding:5px; border:0;
+        position: absolute;
+        width:100%;
+        height: 50px;
+        background-color:#eee;
+    }
+    .title {
+        font: bold 20pt Tahoma;
+    }
+    .control-inputs {
+    }
+    #IFRAME {
+        padding:0;
+        border:0;
+        margin: 50px 0 0;
+        width: 100%;
+        height: 100%;
+        min-height: 600px;
+        background-color: #eee;
+    }
+    </style>
+    <style id="diffstyle">
+        .diff {width:99%; overflow:hidden }
+        .diff-left  { display:block !important; overflow-x:scroll; width: 49%; float:left }
+        .diff-right { display:block !important; overflow-x:scroll; width: 49%; float:left }
+    </style>
+</head>
+
+<body onload="writeDiff(['Hi there! Click the button to fetch logs and calculate the diff. Recommended browser: Chrome (runs faster than Firefox).']); prepopulateIds();">
+
+<header>
+    <span class="title">Travis CI logs compare tool</span>
+    <span class="control-inputs">
+        Build 1: <input id="build1" />
+        Build 2: <input id="build2" />
+        <input type="button" value="fetch logs &amp; diff" onclick="fetchAndDiff()">
+        (use build IDs from the URLs)
+    </span>
+</header>
+<iframe id="IFRAME"></iframe>
+
+<script>
+
+function updateUrl(id1, id2) {
+    var newHash = ['#build1=', id1, '&build2=', id2].join("");
+    history.pushState(null, null, newHash);
+}
+
+function prepopulateIds() {
+    var hashKeyVals = document.location.hash.slice(1).split("&");
+    hashKeyVals.forEach(function (item) {
+        var split = item.split("=");
+        if (split.length == 2) {
+            if(split[0] == "build1") {
+                document.getElementById('build1').value = split[1];
+            } else if (split[0] == "build2") {
+                document.getElementById('build2').value = split[1];
+            }
+        }
+    });
+}
+
+function fetchAndDiff() {
+    var id1 = document.getElementById('build1').value;
+    var id2 = document.getElementById('build2').value;
+
+    var id1parsed = parseInt(id1, 10);
+    var id2parsed = parseInt(id2, 10);
+
+    if (isNaN(id1parsed)) {
+        alert("Invalid input 1: " + id1);
+        return;
+    }
+    if (isNaN(id2parsed)) {
+        alert("Invalid input 2: " + id2);
+        return;
+    }
+
+    // clean the iframe
+    writeDiff(["Hang on, fetching the logs..."]);
+    updateUrl(id1parsed, id2parsed);
+
+    var url1 = getTravisLogUrl(id1parsed);
+    var url2 = getTravisLogUrl(id2parsed);
+
+    var p1 = fetch(url1);
+    var p2 = fetch(url2);
+
+    Promise.all([p1, p2]).then(function (res){
+        writeDiff(["Got the logs, diffing... (can take a few seconds)"]);
+        var t1 = res[0].body;
+        var t2 = res[1].body;
+        setTimeout(function () {
+            makeDiff(t1, t2);
+        },0);
+    }).catch(function() {
+        writeDiff(["Oops something went wrongs when trying to fetch the logs"]);
+    });
+}
+function getTravisLogUrl(jobUrlId) {
+    // don't ask why it's +1, this is how they implemented it on Travis site
+    return 'https://api.travis-ci.org/jobs/' + (Number(jobUrlId) + 1) + '/log';
+}
+
+function makeDiff(t1, t2) {
+    // calculate diff, this may take some time
+    var diff = prettydiff ({
+        source: t1,
+        diff  : t2,
+        lang  : "text",
+        mode : "diff"
+    });
+
+    writeDiff(diff, true);
+}
+
+function writeDiff(diff, doFix) {
+    // inject result into iframe
+    var iframeDoc = document.getElementById('IFRAME').contentDocument;
+
+    iframeDoc.open();
+    iframeDoc.write(diff[0]);
+    iframeDoc.close();
+
+    if (doFix) {
+        // fix iframe CSS and HTML
+        setTimeout(fixIframe, 0);
+    }
+}
+
+function fixIframe() {
+    var iframeDoc = document.getElementById('IFRAME').contentDocument;
+    var iframeBody =  iframeDoc.body;
+    var s = iframeDoc.createElement('style');
+    s.innerHTML = document.getElementById('diffstyle').innerHTML;
+    iframeBody.appendChild(s);
+
+    // remove header from PrettyDiff
+    var body = iframeDoc.querySelector('#webtool');
+    body.removeChild(body.children[2]);
+    //body.removeChild(body.children[1]);
+    body.removeChild(body.children[0]);
+}
+</script>
