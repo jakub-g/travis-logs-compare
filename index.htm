@@ -44,7 +44,7 @@
     </style>
 </head>
 
-<body onload="writeDiff(['Hi there! Click the button to fetch logs and calculate the diff. Recommended browser: Chrome (runs faster than Firefox).']); prepopulateIds();">
+<body onload="main()">
 
 <header>
     <span class="title">Travis CI logs compare tool</span>
@@ -53,6 +53,11 @@
         Build 2: <input id="build2" />
         <input type="button" value="fetch logs &amp; diff" onclick="fetchAndDiff()">
         (use build IDs from the URLs)
+
+        <label style="cursor:help;" title="Git flushes its status updates with just CR, it may result in very long lines and super slow diff">
+            <input type="checkbox" checked id="cr2crlf">
+            Replace CR with CRLF
+        </label>
     </span>
 </header>
 <iframe id="IFRAME"></iframe>
@@ -79,6 +84,7 @@ function prepopulateIds() {
 }
 
 function fetchAndDiff() {
+    var replaceCRtoCRLF = document.getElementById('cr2crlf').checked;
     var id1 = document.getElementById('build1').value;
     var id2 = document.getElementById('build2').value;
 
@@ -108,6 +114,12 @@ function fetchAndDiff() {
         writeDiff(["Got the logs, diffing... (can take a few seconds)"]);
         var t1 = res[0].body;
         var t2 = res[1].body;
+
+        if(replaceCRtoCRLF) {
+            t1 = t1.replace(/\r[^\n]/g, "\r\n");
+            t2 = t2.replace(/\r[^\n]/g, "\r\n");
+        }
+
         setTimeout(function () {
             makeDiff(t1, t2);
         },0);
@@ -147,6 +159,7 @@ function writeDiff(diff, doFix) {
 }
 
 function fixIframe() {
+    // data URIs don't work in Chrome, reading from them violates same-origin rule
     var iframeDoc = document.getElementById('IFRAME').contentDocument;
     var iframeBody =  iframeDoc.body;
     var s = iframeDoc.createElement('style');
@@ -159,4 +172,15 @@ function fixIframe() {
     //body.removeChild(body.children[1]);
     body.removeChild(body.children[0]);
 }
+
+function main() {
+
+    writeDiff(["Hi there! Click the button to fetch logs and calculate the diff.<BR>\
+     Note that for ridiculously big diffs (long lines especially), you may get unresponsive script warnings - ignore them.<BR><BR>\
+     Chrome is slightly faster than Firefox, but has a weird middle-click scrolling bug which makes the page unusable. Fixes welcome.<BR><BR>\
+     Diff implementation used: http://prettydiff.com/"]);
+
+    prepopulateIds();
+}
+
 </script>
