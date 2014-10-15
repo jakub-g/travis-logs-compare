@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Travis CI logs comparison tool</title>
+    <title>Travis diff - Travis CI logs comparison tool</title>
     <link rel="icon" href="./favicon.png">
     <!-- using native Promise implementation, may not work in old browsers -->
     <script src="./fetch-2c1534.js"></script>
@@ -24,13 +24,14 @@
         background-color:#eee;
     }
     footer {
-        margin:0; padding:0; border:0;
+        margin:0; padding:5px; border:0;
         position:absolute;
         width:100%;
         height: 30px;
         border-top:1px solid #999;
         bottom: 0;
         background-color:#eee;
+        text-align:right;
     }
     .title {
         font: bold 20pt Tahoma;
@@ -46,7 +47,7 @@
     }
     </style>
     <style id="diffstyle">
-        .diff {width:99%; overflow:hidden }
+        .diff {width:95%; overflow:hidden }
         .diff-left  { display:block !important; overflow-x:scroll; width: 49%; float:left }
         .diff-right { display:block !important; overflow-x:scroll; width: 49%; float:left }
     </style>
@@ -70,6 +71,10 @@
 </header>
 <iframe id="IFRAME"></iframe>
 <footer>
+    Diff by <a href="http://prettydiff.com/">pretty-diff</a>. Tested in Chrome and Firefox.
+    * <a href="https://github.com/jakub-g/travis-logs-compare/">Contribute on GitHub</a>
+    * The author is <em>not</em> affiliated with Travis CI GmbH
+    * <a href="http://jakub-g.github.io/">author's homepage</a>
 </footer>
 
 <script>
@@ -194,3 +199,7 @@ function main() {
 }
 
 </script>
+
+<script type="text/javascript" src="/ga.js"></script>
+</body>
+</html>
